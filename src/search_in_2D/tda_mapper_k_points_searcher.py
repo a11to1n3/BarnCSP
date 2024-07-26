@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from sklearn.cluster import DBSCAN
 
-from .utils import split_range_with_overlap_percentage, sample_neighboring_points
+from ..utils import split_range_with_overlap_percentage, sample_neighboring_points
 
 def find_optimal_k_points_tda(
     nodes_df,
