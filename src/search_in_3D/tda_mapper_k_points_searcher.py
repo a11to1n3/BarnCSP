@@ -4,7 +4,7 @@ from sklearn.cluster import DBSCAN
 
 from ..utils import split_range_with_overlap_percentage, sample_neighboring_points
 
-def find_optimal_k_points_tda_2D(
+def find_optimal_k_points_tda_3D(
     nodes_df,
     barn_inside_points,
     k,

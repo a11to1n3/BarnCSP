@@ -5,7 +5,7 @@ from sklearn_extra.cluster import KMedoids
 
 from .utils import sample_neighboring_points
 
-def find_optimal_k_points_kmedoids(
+def find_optimal_k_points_kmedoids_2D(
     nodes_df,
     barn_inside_points,
     k,
