@@ -11,5 +11,8 @@
 - Run the script, then the corresponding results will appear in the results folder:
 
 `
-python barnCSP.py -c [tda-mapper/kmedoids] [path/to/barn/csv/file]
+python barnCSP.py -c [tda-mapper/kmedoids] -d [2D/3D] [path/to/barn/csv/file]
 `
+
+### Note
+Extra settings are configured directly in the configuration dictionary in the barnCSP.py file
