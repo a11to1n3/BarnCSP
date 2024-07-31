@@ -3,14 +3,13 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 from sklearn_extra.cluster import KMedoids
 
-from .utils import sample_neighboring_points
+from ..utils import sample_neighboring_points_3D
 
-def find_optimal_k_points_kmedoids(
+def find_optimal_k_points_kmedoids_3D(
     nodes_df,
     barn_inside_points,
     k,
     in_CO2_avg,
-    barn_section=3.1500001,
     lr=5e-7,
     epochs=20,
     ## For sensitivity analysis
@@ -18,34 +17,32 @@ def find_optimal_k_points_kmedoids(
     neighborhood_numbers = 5,
     barn_LW_ratio=2
 ):
-
-    # Filtering the nodes at the given height
-    nodes_at_height_df = nodes_df[barn_inside_points.flatten().astype(bool)][
-        nodes_df[barn_inside_points.flatten().astype(bool)].Y == barn_section
-    ]
-    nodes_at_height_df = nodes_at_height_df.reset_index()
+    # Filtering the nodes inside the barn
+    nodes_df[~barn_inside_points.flatten().astype(bool)] = 1e9
+    # nodes_df = nodes_df.reset_index()
 
     # Find k clusters
-    kmedoids = KMedoids(n_clusters=k, random_state=0).fit(nodes_at_height_df[["X","Z","u","w","v","Carbon"]].values)
+    kmedoids = KMedoids(n_clusters=k, random_state=0).fit(nodes_df[["X","Z","u","w","v","Carbon"]].values)
 
     # Initiate clusters as columns in the dataframe
     for i in range(k):
-        nodes_at_height_df[f"cluster{i}"] = -2
+        nodes_df[f"cluster{i}"] = -2
 
     # Assigning number accordingly to the clusters
-    for i in range(len(nodes_at_height_df)):
-        nodes_at_height_df.loc[i, f"cluster{kmedoids.labels_[i]}"] = 1
+    for i in range(len(nodes_df)):
+        nodes_df.loc[i, f"cluster{kmedoids.labels_[i]}"] = 1
 
     cols = [f"cluster{i}" for i in range(k)]
     cols.append("Carbon")
-    cluster_image = nodes_at_height_df[cols].values.reshape(1, 100*barn_LW_ratio, 100, -1)
-    position_map = nodes_at_height_df[["X", "Z"]].values.reshape(100*barn_LW_ratio, 100, -1)
+    depth = len(nodes_df[cols[0]].values.flatten()) // (100*barn_LW_ratio*100)
+    cluster_image = nodes_df[cols].values.reshape(1, 100*barn_LW_ratio, 100, depth, -1)
+    position_map = nodes_df[["X", "Y", "Z"]].values.reshape(100*barn_LW_ratio, 100, depth, -1)
 
     # Use DBSCAN clustering to cluster again the elements in every assigned cluster
     cluster_pools = []
     for i in range(k):
-        cluster_pts = nodes_at_height_df[nodes_at_height_df[f"cluster{i}"] == 1][
-            ["X", "Z", "u", "w", "v", "Carbon"]
+        cluster_pts = nodes_df[nodes_df[f"cluster{i}"] == 1][
+            ["X", "Y", "Z", "u", "w", "v", "Carbon"]
         ].values
 
         hdb = DBSCAN(min_samples=9, eps=0.5)
@@ -97,8 +94,9 @@ def find_optimal_k_points_kmedoids(
             # Get the location of the closest point
             min_locs = [
                 [
-                    min_index[j] // cluster_pools[j].shape[1],
-                    min_index[j] % cluster_pools[j].shape[1],
+                    min_index[j] // (cluster_pools[j].shape[1]*cluster_pools[j].shape[2]),
+                    min_index[j] % (cluster_pools[j].shape[1]*cluster_pools[j].shape[2]) // cluster_pools[j].shape[2],
+                    min_index[j] % (cluster_pools[j].shape[1]*cluster_pools[j].shape[2]) % cluster_pools[j].shape[2]
                 ]
                 for j in range(k)
             ]
@@ -136,10 +134,10 @@ def find_optimal_k_points_kmedoids(
 
 
     # Do sensitivity analysis
-    image_width, image_height = 100*barn_LW_ratio, 100  # Image dimensions
+    image_width, image_height, image_depth = 100*barn_LW_ratio, 100, depth  # Image dimensions
 
-    combinations = sample_neighboring_points(
-        min_locs, neighborhood_numbers, image_width, image_height, sampling_budget
+    combinations = sample_neighboring_points_3D(
+        min_locs, neighborhood_numbers, image_width, image_height, image_depth, sampling_budget
     )
     losses = []
     for i in range(len(combinations)):
