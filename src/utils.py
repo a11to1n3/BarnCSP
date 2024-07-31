@@ -21,6 +21,7 @@ def split_range_with_overlap_percentage(
     total_length = range_max - range_min
     part_length_without_overlap = total_length / num_parts
     overlap_length = part_length_without_overlap * overlap_percentage / 100
+    print(total_length, part_length_without_overlap, overlap_length)
 
     split_ranges = []
     for i in range(num_parts):
@@ -49,7 +50,7 @@ def split_range_with_overlap_percentage(
     return split_ranges
 
 
-def get_neighbors(x, y, width, height, n):
+def get_neighbors_2D(x, y, width, height, n):
     """Get up to n neighbors for a point located at (x, y) in an image of size width x height."""
     neighbors = []
     count = 0
@@ -70,6 +71,27 @@ def get_neighbors(x, y, width, height, n):
 
     return neighbors  # Return up to n neighbors
 
+def get_neighbors_3D(x, y, z, width, height, depth, n):
+    """Get up to n neighbors for a point located at (x, y) in an image of size width x height."""
+    neighbors = []
+    count = 0
+    for dx in [-1, 0, 1]:
+        for dy in [-1, 0, 1]:
+            for dz in [-1, 0, 1]:
+                if dx == 0 and dy == 0 and dz == 0:
+                    continue  # Skip the point itself
+                nx, ny, nz = x + dx, y + dy, z + dz
+                if 0 <= nx < width and 0 <= ny < height and 0 <= nz < depth:
+                    neighbors.append((nx, ny, nz))
+
+                count += 1
+                if count > n:
+                    break
+
+    if len(neighbors) == 0:
+        return None
+
+    return neighbors  # Return up to n neighbors
 
 def sample_combinations(all_neighbors, budget):
     """
@@ -111,12 +133,27 @@ def sample_combinations(all_neighbors, budget):
     return sampled_combinations
 
 
-def sample_neighboring_points(k_points, n, image_width, image_height, budget=2000):
+def sample_neighboring_points_2D(k_points, n, image_width, image_height, budget=2000):
     """Sample n neighboring points for each of the k points and return all combinations."""
     all_neighbors = []
     for point in k_points:
         x, y = point
-        neighbors = get_neighbors(x, y, image_width, image_height, n)
+        neighbors = get_neighbors_2D(x, y, image_width, image_height, n)
+        if neighbors is not None:
+            all_neighbors.append(neighbors)
+
+    # Generate all possible combinations of one neighbor from each point's neighborhood
+    # print(all_neighbors)
+    all_combinations = sample_combinations(all_neighbors, budget)
+    return all_combinations
+
+
+def sample_neighboring_points_3D(k_points, n, image_width, image_height, image_depth, budget=2000):
+    """Sample n neighboring points for each of the k points and return all combinations."""
+    all_neighbors = []
+    for point in k_points:
+        x, y, z = point
+        neighbors = get_neighbors_3D(x, y, z, image_width, image_height, image_depth, n)
         if neighbors is not None:
             all_neighbors.append(neighbors)
 
