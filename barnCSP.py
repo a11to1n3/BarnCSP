@@ -17,7 +17,7 @@ APP_CONFIG = {
     "barn_section": 3.1500001,
 }
 TDA_MAPPER_CONFIG = {
-    "cross_section": "X",
+    "cross_section": "Z",
     "overlapping_portion": 75,  # %
     "lr": 5e-7,
     "epochs": 20,
@@ -173,7 +173,7 @@ def main(args):
             res_summary[f"{i+1}-point"]["Mean Loss"] = results[i][1]
             res_summary[f"{i+1}-point"]["Std Loss"] = results[i][2]
             res_summary[f"{i+1}-point"][f"{i+1} Points' Position"] = [
-                [j[0], j[1]] for j in results[i][3]
+                [l for l in j] for j in results[i][3]
             ]
 
     print("[Status] Saving ...")
