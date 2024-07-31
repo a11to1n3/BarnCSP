@@ -6,8 +6,10 @@ import argparse
 import numpy as np
 import pandas as pd
 
-from src.tda_mapper_k_points_searcher import find_optimal_k_points_tda
-from src.kmedoids_k_points_searcher import find_optimal_k_points_kmedoids
+from src.search_in_2D.tda_mapper_k_points_searcher import find_optimal_k_points_tda_2D
+from src.search_in_2D.kmedoids_k_points_searcher import find_optimal_k_points_kmedoids_2D
+from src.search_in_3D.tda_mapper_k_points_searcher import find_optimal_k_points_tda_3D
+from src.search_in_3D.kmedoids_k_points_searcher import find_optimal_k_points_kmedoids_3D
 
 APP_CONFIG = {
     "results_path": "./results",
@@ -15,6 +17,7 @@ APP_CONFIG = {
     "barn_section": 3.1500001,
 }
 TDA_MAPPER_CONFIG = {
+    "cross_section": "Z",
     "overlapping_portion": 75,  # %
     "lr": 5e-7,
     "epochs": 20,
@@ -76,42 +79,45 @@ def main(args):
             args.barnFilename.split("/")[-1].split(".")[0],
         )
 
-        # TDA needs a space, defined by a range to operate on
-        # Here: it is the boundary of the X axis of the barn-inside region
-        range_at3_max = np.histogram(
-            nodes_df[barn_inside.flatten().astype(bool)][
-                nodes_df[barn_inside.flatten().astype(bool)].Y
-                == APP_CONFIG["barn_section"]
-            ]["X"].values
-        )[1].max()
-
-        range_at3_min = np.histogram(
-            nodes_df[barn_inside.flatten().astype(bool)][
-                nodes_df[barn_inside.flatten().astype(bool)].Y
-                == APP_CONFIG["barn_section"]
-            ]["X"].values
-        )[1].min()
-
-        # Search for k points
-        print("[Status] Searching k points ...")
-        results = [
-            find_optimal_k_points_tda(
-                nodes_df,
-                barn_inside,
-                i,
-                range_at3_max,
-                range_at3_min,
-                in_CO2_avg,
-                APP_CONFIG["barn_section"],
-                overlap=TDA_MAPPER_CONFIG["overlapping_portion"],
-                lr=TDA_MAPPER_CONFIG["lr"],
-                epochs=TDA_MAPPER_CONFIG["epochs"],
-                sampling_budget=TDA_MAPPER_CONFIG["sampling_budget"],
-                neighborhood_numbers=TDA_MAPPER_CONFIG["neighborhood_numbers"],
-                barn_LW_ratio=barn_LW_ratio,
-            )
-            for i in tqdm(range(1, APP_CONFIG["max_k_points"] + 1))
-        ]
+        # Search for k points in 2D
+        if args.dim.lower() == "2d":
+            print(f"[Status] Searching k points in 2D at height {APP_CONFIG['barn_section']} ...")
+            results = [
+                find_optimal_k_points_tda_2D(
+                    nodes_df,
+                    barn_inside,
+                    i,
+                    in_CO2_avg,
+                    barn_section=APP_CONFIG["barn_section"],
+                    cross_section=TDA_MAPPER_CONFIG["cross_section"],
+                    overlap=TDA_MAPPER_CONFIG["overlapping_portion"],
+                    lr=TDA_MAPPER_CONFIG["lr"],
+                    epochs=TDA_MAPPER_CONFIG["epochs"],
+                    sampling_budget=TDA_MAPPER_CONFIG["sampling_budget"],
+                    neighborhood_numbers=TDA_MAPPER_CONFIG["neighborhood_numbers"],
+                    barn_LW_ratio=barn_LW_ratio,
+                )
+                for i in tqdm(range(1, APP_CONFIG["max_k_points"] + 1))
+            ]
+        # Search for k points in 3D
+        elif args.dim.lower() == "3d":
+            print("[Status] Searching k points in the whole 3D space ...")
+            results = [
+                find_optimal_k_points_tda_3D(
+                    nodes_df,
+                    barn_inside,
+                    i,
+                    in_CO2_avg,
+                    cross_section=TDA_MAPPER_CONFIG["cross_section"],
+                    overlap=TDA_MAPPER_CONFIG["overlapping_portion"],
+                    lr=TDA_MAPPER_CONFIG["lr"],
+                    epochs=TDA_MAPPER_CONFIG["epochs"],
+                    sampling_budget=TDA_MAPPER_CONFIG["sampling_budget"],
+                    neighborhood_numbers=TDA_MAPPER_CONFIG["neighborhood_numbers"],
+                    barn_LW_ratio=barn_LW_ratio,
+                )
+                for i in tqdm(range(1, APP_CONFIG["max_k_points"] + 1))
+            ]
 
     elif args.clusteringAlg.lower() == "kmedoids":
         print("[Status] Starting kmedoids k-point searcher ...")
@@ -121,23 +127,40 @@ def main(args):
             args.barnFilename.split("/")[-1].split(".")[0],
         )
 
-        # Search for k points
-        print("[Status] Searching k points ...")
-        results = [
-            find_optimal_k_points_kmedoids(
-                nodes_df,
-                barn_inside,
-                i,
-                in_CO2_avg,
-                APP_CONFIG["barn_section"],
-                lr=KMEDOIDS_CONFIG["lr"],
-                epochs=KMEDOIDS_CONFIG["epochs"],
-                sampling_budget=KMEDOIDS_CONFIG["sampling_budget"],
-                neighborhood_numbers=KMEDOIDS_CONFIG["neighborhood_numbers"],
-                barn_LW_ratio=barn_LW_ratio,
-            )
-            for i in tqdm(range(1, APP_CONFIG["max_k_points"] + 1))
-        ]
+        # Search for k points in 2D
+        if args.dim.lower() == "2d":
+            print(f"[Status] Searching k points in 2D at height {APP_CONFIG['barn_section']} ...")
+            results = [
+                find_optimal_k_points_kmedoids_2D(
+                    nodes_df,
+                    barn_inside,
+                    i,
+                    in_CO2_avg,
+                    APP_CONFIG["barn_section"],
+                    lr=KMEDOIDS_CONFIG["lr"],
+                    epochs=KMEDOIDS_CONFIG["epochs"],
+                    sampling_budget=KMEDOIDS_CONFIG["sampling_budget"],
+                    neighborhood_numbers=KMEDOIDS_CONFIG["neighborhood_numbers"],
+                    barn_LW_ratio=barn_LW_ratio,
+                )
+                for i in tqdm(range(1, APP_CONFIG["max_k_points"] + 1))
+            ]
+        if args.dim.lower() == "3d":
+            print("[Status] Searching k points in the whole 3D space ...")
+            results = [
+                find_optimal_k_points_kmedoids_3D(
+                    nodes_df,
+                    barn_inside,
+                    i,
+                    in_CO2_avg,
+                    lr=KMEDOIDS_CONFIG["lr"],
+                    epochs=KMEDOIDS_CONFIG["epochs"],
+                    sampling_budget=KMEDOIDS_CONFIG["sampling_budget"],
+                    neighborhood_numbers=KMEDOIDS_CONFIG["neighborhood_numbers"],
+                    barn_LW_ratio=barn_LW_ratio,
+                )
+                for i in tqdm(range(1, APP_CONFIG["max_k_points"] + 1))
+            ]
 
     # Prepare a dictionary for saving into a json file
     res_summary = {}
@@ -150,17 +173,25 @@ def main(args):
             res_summary[f"{i+1}-point"]["Mean Loss"] = results[i][1]
             res_summary[f"{i+1}-point"]["Std Loss"] = results[i][2]
             res_summary[f"{i+1}-point"][f"{i+1} Points' Position"] = [
-                [j[0], j[1]] for j in results[i][3]
+                [l for l in j] for j in results[i][3]
             ]
 
     print("[Status] Saving ...")
     try:
-        with open(APP_CONFIG["results_path"] + ".json", "w") as fp:
-            json.dump(res_summary, fp)
+        if args.clusteringAlg == "tda-mapper":
+            with open(APP_CONFIG["results_path"] + "_" + args.dim.lower() + TDA_MAPPER_CONFIG['cross_section'] + ".json", "w") as fp:
+                json.dump(res_summary, fp)
+        else:
+            with open(APP_CONFIG["results_path"] + "_" + args.dim.lower() + ".json", "w") as fp:
+                json.dump(res_summary, fp)
     except OSError:
         os.mkdir("/".join(APP_CONFIG["results_path"].split("/")[:-1]))
-        with open(APP_CONFIG["results_path"] + ".json", "w") as fp:
-            json.dump(res_summary, fp)
+        if args.clusteringAlg == "tda-mapper":
+            with open(APP_CONFIG["results_path"] + "_" + args.dim.lower() + TDA_MAPPER_CONFIG['cross_section'] + ".json", "w") as fp:
+                json.dump(res_summary, fp)
+        else:
+            with open(APP_CONFIG["results_path"] + "_" + args.dim.lower() + ".json", "w") as fp:
+                json.dump(res_summary, fp)
 
 
 if __name__ == "__main__":
@@ -172,6 +203,13 @@ if __name__ == "__main__":
         type=str,
         default="tda-mapper",
         help="choose among tda-mapper/kmedoids",
+    )
+    parser.add_argument(
+        "-d",
+        "--dim",
+        type=str,
+        default="2D",
+        help="choose among 2D/3D",
     )
 
     args = parser.parse_args()
