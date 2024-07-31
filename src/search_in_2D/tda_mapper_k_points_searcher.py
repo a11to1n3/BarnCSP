@@ -2,15 +2,14 @@ import torch
 import numpy as np
 from sklearn.cluster import DBSCAN
 
-from ..utils import split_range_with_overlap_percentage, sample_neighboring_points
+from ..utils import split_range_with_overlap_percentage, sample_neighboring_points_2D
 
 def find_optimal_k_points_tda_2D(
     nodes_df,
     barn_inside_points,
     k,
-    range_max,
-    range_min,
     in_CO2_avg,
+    cross_section="X", # Can be only X or Y
     barn_section=3.1500001,
     overlap=75,
     lr=5e-7,
@@ -20,6 +19,25 @@ def find_optimal_k_points_tda_2D(
     neighborhood_numbers = 5,
     barn_LW_ratio=2
 ):
+    
+    if cross_section not in ["X","Z"]:
+        raise f"{cross_section} is an invalid value for cross section. Cross section for 2D TDA Mapper search can only be 'X' or 'Y'."
+    
+    # TDA needs a space, defined by a range to operate on
+    # Here: it is the boundary of the "cross_section" axis of the barn-inside region
+    range_max = np.histogram(
+        nodes_df[barn_inside_points.flatten().astype(bool)][
+            nodes_df[barn_inside_points.flatten().astype(bool)].Y
+            == barn_section
+        ][cross_section].values
+    )[1].max()
+
+    range_min = np.histogram(
+        nodes_df[barn_inside_points.flatten().astype(bool)][
+            nodes_df[barn_inside_points.flatten().astype(bool)].Y
+            == barn_section
+        ][cross_section].values
+    )[1].min()
 
     # Spliting the operating space range into overlapping regions
     # with a given overlapping percentage
@@ -147,7 +165,7 @@ def find_optimal_k_points_tda_2D(
     # Do sensitivity analysis
     image_width, image_height = 100*barn_LW_ratio, 100  # Image dimensions
 
-    combinations = sample_neighboring_points(
+    combinations = sample_neighboring_points_2D(
         min_locs, neighborhood_numbers, image_width, image_height, sampling_budget
     )
     losses = []

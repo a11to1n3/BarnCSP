@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 from sklearn_extra.cluster import KMedoids
 
-from .utils import sample_neighboring_points
+from ..utils import sample_neighboring_points_2D
 
 def find_optimal_k_points_kmedoids_2D(
     nodes_df,
@@ -138,7 +138,7 @@ def find_optimal_k_points_kmedoids_2D(
     # Do sensitivity analysis
     image_width, image_height = 100*barn_LW_ratio, 100  # Image dimensions
 
-    combinations = sample_neighboring_points(
+    combinations = sample_neighboring_points_2D(
         min_locs, neighborhood_numbers, image_width, image_height, sampling_budget
     )
     losses = []
