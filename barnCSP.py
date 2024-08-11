@@ -8,8 +8,12 @@ import pandas as pd
 
 from src.search_in_2D.tda_mapper_k_points_searcher import find_optimal_k_points_tda_2D
 from src.search_in_2D.kmedoids_k_points_searcher import find_optimal_k_points_kmedoids_2D
+from src.search_in_2D.random_k_points_searcher import find_optimal_k_points_random_search_2D
+
 from src.search_in_3D.tda_mapper_k_points_searcher import find_optimal_k_points_tda_3D
 from src.search_in_3D.kmedoids_k_points_searcher import find_optimal_k_points_kmedoids_3D
+from src.search_in_3D.random_k_points_searcher import find_optimal_k_points_random_search_3D
+
 
 APP_CONFIG = {
     "results_path": "./results",
@@ -27,6 +31,12 @@ TDA_MAPPER_CONFIG = {
 }
 KMEDOIDS_CONFIG = {
     "lr": 5e-7,
+    "epochs": 20,
+    ## For sensitivity analysis
+    "sampling_budget": 10000,
+    "neighborhood_numbers": 5,
+}
+RANDOM_CONFIG = {
     "epochs": 20,
     ## For sensitivity analysis
     "sampling_budget": 10000,
@@ -161,6 +171,46 @@ def main(args):
                 )
                 for i in tqdm(range(1, APP_CONFIG["max_k_points"] + 1))
             ]
+    elif args.clusteringAlg.lower() == "random":
+        print("[Status] Starting random k-point searcher ...")
+        # Update the saving path
+        APP_CONFIG["results_path"] = os.path.join(
+            os.path.join(APP_CONFIG["results_path"], "random"),
+            args.barnFilename.split("/")[-1].split(".")[0],
+        )
+
+        # Search for k points in 2D
+        if args.dim.lower() == "2d":
+            print(f"[Status] Searching k points in 2D at height {APP_CONFIG['barn_section']} ...")
+            results = [
+                find_optimal_k_points_random_search_2D(
+                    nodes_df,
+                    barn_inside,
+                    i,
+                    in_CO2_avg,
+                    APP_CONFIG["barn_section"],
+                    epochs=RANDOM_CONFIG["epochs"],
+                    sampling_budget=RANDOM_CONFIG["sampling_budget"],
+                    neighborhood_numbers=RANDOM_CONFIG["neighborhood_numbers"],
+                    barn_LW_ratio=barn_LW_ratio,
+                )
+                for i in tqdm(range(1, APP_CONFIG["max_k_points"] + 1))
+            ]
+        if args.dim.lower() == "3d":
+            print("[Status] Searching k points in the whole 3D space ...")
+            results = [
+                find_optimal_k_points_random_search_3D(
+                    nodes_df,
+                    barn_inside,
+                    i,
+                    in_CO2_avg,
+                    epochs=RANDOM_CONFIG["epochs"],
+                    sampling_budget=RANDOM_CONFIG["sampling_budget"],
+                    neighborhood_numbers=RANDOM_CONFIG["neighborhood_numbers"],
+                    barn_LW_ratio=barn_LW_ratio,
+                )
+                for i in tqdm(range(1, APP_CONFIG["max_k_points"] + 1))
+            ]
 
     # Prepare a dictionary for saving into a json file
     res_summary = {}
@@ -168,7 +218,7 @@ def main(args):
         if results[i] is not None:
             res_summary[f"{i+1}-point"] = {}
             res_summary[f"{i+1}-point"]["Min Loss"] = float(
-                results[i][0].detach().numpy()
+                results[i][0].detach().numpy() if "torch" in str(type(results[i][0])) else float(results[i][0])
             )
             res_summary[f"{i+1}-point"]["Mean Loss"] = results[i][1]
             res_summary[f"{i+1}-point"]["Std Loss"] = results[i][2]
@@ -202,7 +252,7 @@ if __name__ == "__main__":
         "--clusteringAlg",
         type=str,
         default="tda-mapper",
-        help="choose among tda-mapper/kmedoids",
+        help="choose among tda-mapper/kmedoids/random",
     )
     parser.add_argument(
         "-d",
