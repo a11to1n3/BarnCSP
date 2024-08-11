@@ -10,12 +10,14 @@ from src.search_in_2D.tda_mapper_k_points_searcher import find_optimal_k_points_
 from src.search_in_2D.kmedoids_k_points_searcher import find_optimal_k_points_kmedoids_2D
 from src.search_in_2D.random_k_points_searcher import find_optimal_k_points_random_search_2D
 from src.search_in_2D.uniform_grid_k_points_searcher import find_optimal_k_points_uniform_grid_search_2D
+from src.search_in_2D.simulated_annealing_k_points_searcher import find_optimal_k_points_simulated_annealing_2D
 
 
 from src.search_in_3D.tda_mapper_k_points_searcher import find_optimal_k_points_tda_3D
 from src.search_in_3D.kmedoids_k_points_searcher import find_optimal_k_points_kmedoids_3D
 from src.search_in_3D.random_k_points_searcher import find_optimal_k_points_random_search_3D
 from src.search_in_3D.uniform_grid_k_points_searcher import find_optimal_k_points_uniform_grid_search_3D
+from src.search_in_3D.simulated_annealing_k_points_searcher import find_optimal_k_points_simulated_annealing_3D
 
 
 APP_CONFIG = {
@@ -49,6 +51,14 @@ UNIFORM_GRID_CONFIG = {
     ## For sensitivity analysis
     "sampling_budget": 10000,
     "neighborhood_numbers": 5,
+}
+SIMULATED_ANNEALING_CONFIG = {
+    ## For sensitivity analysis
+    "sampling_budget": 10000,
+    "neighborhood_numbers": 5,
+    "epochs": 20,
+    "initial_temperature": 100,
+    "cooling_rate": 0.995,
 }
 
 
@@ -237,8 +247,8 @@ def main(args):
                     i,
                     in_CO2_avg,
                     APP_CONFIG["barn_section"],
-                    sampling_budget=RANDOM_CONFIG["sampling_budget"],
-                    neighborhood_numbers=RANDOM_CONFIG["neighborhood_numbers"],
+                    sampling_budget=UNIFORM_GRID_CONFIG["sampling_budget"],
+                    neighborhood_numbers=UNIFORM_GRID_CONFIG["neighborhood_numbers"],
                     barn_LW_ratio=barn_LW_ratio,
                 )
                 for i in tqdm(range(1, APP_CONFIG["max_k_points"] + 1))
@@ -251,6 +261,52 @@ def main(args):
                     barn_inside,
                     i,
                     in_CO2_avg,
+                    sampling_budget=UNIFORM_GRID_CONFIG["sampling_budget"],
+                    neighborhood_numbers=UNIFORM_GRID_CONFIG["neighborhood_numbers"],
+                    barn_LW_ratio=barn_LW_ratio,
+                )
+                for i in tqdm(range(1, APP_CONFIG["max_k_points"] + 1))
+            ]
+    elif args.clusteringAlg.lower() == "simulated-annealing":
+        print("[Status] Starting simmulated annealing k-point searcher ...")
+        # Update the saving path
+        APP_CONFIG["results_path"] = os.path.join(
+            os.path.join(APP_CONFIG["results_path"], "simulated_annealing"),
+            args.barnFilename.split("/")[-1].split(".")[0],
+        )
+
+        # Search for k points in 2D
+        if args.dim.lower() == "2d":
+            print(f"[Status] Searching k points in 2D at height {APP_CONFIG['barn_section']} ...")
+            results = [
+                find_optimal_k_points_simulated_annealing_2D(
+                    nodes_df,
+                    barn_inside,
+                    i,
+                    in_CO2_avg,
+                    APP_CONFIG["barn_section"],
+                    sampling_budget=SIMULATED_ANNEALING_CONFIG["sampling_budget"],
+                    neighborhood_numbers=SIMULATED_ANNEALING_CONFIG["neighborhood_numbers"],
+                    epochs=SIMULATED_ANNEALING_CONFIG["epochs"],
+                    initial_temperature=SIMULATED_ANNEALING_CONFIG["initial_temperature"],
+                    cooling_rate=SIMULATED_ANNEALING_CONFIG["cooling_rate"],
+                    barn_LW_ratio=barn_LW_ratio,
+                )
+                for i in tqdm(range(1, APP_CONFIG["max_k_points"] + 1))
+            ]
+        elif args.dim.lower() == "3d":
+            print("[Status] Searching k points in the whole 3D space ...")
+            results = [
+                find_optimal_k_points_simulated_annealing_3D(
+                    nodes_df,
+                    barn_inside,
+                    i,
+                    in_CO2_avg,
+                    sampling_budget=SIMULATED_ANNEALING_CONFIG["sampling_budget"],
+                    neighborhood_numbers=SIMULATED_ANNEALING_CONFIG["neighborhood_numbers"],
+                    epochs=SIMULATED_ANNEALING_CONFIG["epochs"],
+                    initial_temperature=SIMULATED_ANNEALING_CONFIG["initial_temperature"],
+                    cooling_rate=SIMULATED_ANNEALING_CONFIG["cooling_rate"],
                     sampling_budget=RANDOM_CONFIG["sampling_budget"],
                     neighborhood_numbers=RANDOM_CONFIG["neighborhood_numbers"],
                     barn_LW_ratio=barn_LW_ratio,
@@ -298,7 +354,7 @@ if __name__ == "__main__":
         "--clusteringAlg",
         type=str,
         default="tda-mapper",
-        help="choose among tda-mapper/kmedoids/random/uniform",
+        help="choose among tda-mapper/kmedoids/random/uniform/simulated-annealing",
     )
     parser.add_argument(
         "-d",
