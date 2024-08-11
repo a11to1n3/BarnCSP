@@ -13,7 +13,6 @@ from src.search_in_2D.uniform_grid_k_points_searcher import find_optimal_k_point
 from src.search_in_2D.simulated_annealing_k_points_searcher import find_optimal_k_points_simulated_annealing_2D
 
 
-
 from src.search_in_3D.tda_mapper_k_points_searcher import find_optimal_k_points_tda_3D
 from src.search_in_3D.kmedoids_k_points_searcher import find_optimal_k_points_kmedoids_3D
 from src.search_in_3D.random_k_points_searcher import find_optimal_k_points_random_search_3D
@@ -308,6 +307,8 @@ def main(args):
                     epochs=SIMULATED_ANNEALING_CONFIG["epochs"],
                     initial_temperature=SIMULATED_ANNEALING_CONFIG["initial_temperature"],
                     cooling_rate=SIMULATED_ANNEALING_CONFIG["cooling_rate"],
+                    sampling_budget=RANDOM_CONFIG["sampling_budget"],
+                    neighborhood_numbers=RANDOM_CONFIG["neighborhood_numbers"],
                     barn_LW_ratio=barn_LW_ratio,
                 )
                 for i in tqdm(range(1, APP_CONFIG["max_k_points"] + 1))
