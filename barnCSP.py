@@ -9,10 +9,13 @@ import pandas as pd
 from src.search_in_2D.tda_mapper_k_points_searcher import find_optimal_k_points_tda_2D
 from src.search_in_2D.kmedoids_k_points_searcher import find_optimal_k_points_kmedoids_2D
 from src.search_in_2D.random_k_points_searcher import find_optimal_k_points_random_search_2D
+from src.search_in_2D.uniform_grid_k_points_searcher import find_optimal_k_points_uniform_grid_search_2D
+
 
 from src.search_in_3D.tda_mapper_k_points_searcher import find_optimal_k_points_tda_3D
 from src.search_in_3D.kmedoids_k_points_searcher import find_optimal_k_points_kmedoids_3D
 from src.search_in_3D.random_k_points_searcher import find_optimal_k_points_random_search_3D
+from src.search_in_3D.uniform_grid_k_points_searcher import find_optimal_k_points_uniform_grid_search_3D
 
 
 APP_CONFIG = {
@@ -38,6 +41,11 @@ KMEDOIDS_CONFIG = {
 }
 RANDOM_CONFIG = {
     "epochs": 20,
+    ## For sensitivity analysis
+    "sampling_budget": 10000,
+    "neighborhood_numbers": 5,
+}
+UNIFORM_GRID_CONFIG = {
     ## For sensitivity analysis
     "sampling_budget": 10000,
     "neighborhood_numbers": 5,
@@ -155,7 +163,7 @@ def main(args):
                 )
                 for i in tqdm(range(1, APP_CONFIG["max_k_points"] + 1))
             ]
-        if args.dim.lower() == "3d":
+        elif args.dim.lower() == "3d":
             print("[Status] Searching k points in the whole 3D space ...")
             results = [
                 find_optimal_k_points_kmedoids_3D(
@@ -196,7 +204,7 @@ def main(args):
                 )
                 for i in tqdm(range(1, APP_CONFIG["max_k_points"] + 1))
             ]
-        if args.dim.lower() == "3d":
+        elif args.dim.lower() == "3d":
             print("[Status] Searching k points in the whole 3D space ...")
             results = [
                 find_optimal_k_points_random_search_3D(
@@ -205,6 +213,44 @@ def main(args):
                     i,
                     in_CO2_avg,
                     epochs=RANDOM_CONFIG["epochs"],
+                    sampling_budget=RANDOM_CONFIG["sampling_budget"],
+                    neighborhood_numbers=RANDOM_CONFIG["neighborhood_numbers"],
+                    barn_LW_ratio=barn_LW_ratio,
+                )
+                for i in tqdm(range(1, APP_CONFIG["max_k_points"] + 1))
+            ]
+    elif args.clusteringAlg.lower() == "uniform":
+        print("[Status] Starting uniform k-point searcher ...")
+        # Update the saving path
+        APP_CONFIG["results_path"] = os.path.join(
+            os.path.join(APP_CONFIG["results_path"], "uniform"),
+            args.barnFilename.split("/")[-1].split(".")[0],
+        )
+
+        # Search for k points in 2D
+        if args.dim.lower() == "2d":
+            print(f"[Status] Searching k points in 2D at height {APP_CONFIG['barn_section']} ...")
+            results = [
+                find_optimal_k_points_uniform_grid_search_2D(
+                    nodes_df,
+                    barn_inside,
+                    i,
+                    in_CO2_avg,
+                    APP_CONFIG["barn_section"],
+                    sampling_budget=RANDOM_CONFIG["sampling_budget"],
+                    neighborhood_numbers=RANDOM_CONFIG["neighborhood_numbers"],
+                    barn_LW_ratio=barn_LW_ratio,
+                )
+                for i in tqdm(range(1, APP_CONFIG["max_k_points"] + 1))
+            ]
+        elif args.dim.lower() == "3d":
+            print("[Status] Searching k points in the whole 3D space ...")
+            results = [
+                find_optimal_k_points_uniform_grid_search_3D(
+                    nodes_df,
+                    barn_inside,
+                    i,
+                    in_CO2_avg,
                     sampling_budget=RANDOM_CONFIG["sampling_budget"],
                     neighborhood_numbers=RANDOM_CONFIG["neighborhood_numbers"],
                     barn_LW_ratio=barn_LW_ratio,
@@ -252,7 +298,7 @@ if __name__ == "__main__":
         "--clusteringAlg",
         type=str,
         default="tda-mapper",
-        help="choose among tda-mapper/kmedoids/random",
+        help="choose among tda-mapper/kmedoids/random/uniform",
     )
     parser.add_argument(
         "-d",
