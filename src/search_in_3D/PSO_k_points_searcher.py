@@ -6,7 +6,6 @@ def find_optimal_k_points_pso_3D(
     barn_inside_points,
     k,
     in_CO2_avg,
-    num_particles=20,
     epochs=100,
     c1=1.5,
     c2=1.5,
@@ -34,7 +33,7 @@ def find_optimal_k_points_pso_3D(
         return np.abs(np.mean(points) - in_CO2_avg)
 
     # Initialize particles
-    particles = [initialize_particle() for _ in range(num_particles)]
+    particles = [initialize_particle() for _ in range(k)]
     velocities = [np.zeros_like(particle) for particle in particles]
     personal_best_positions = particles.copy()
     personal_best_fitness = [calculate_fitness(p) for p in particles]
@@ -44,7 +43,7 @@ def find_optimal_k_points_pso_3D(
     global_best_fitness = personal_best_fitness[global_best_index]
 
     for _ in range(epochs):
-        for i in range(num_particles):
+        for i in range(k):
             # Update velocity
             r1, r2 = np.random.rand(2)
             velocities[i] = (w * velocities[i] +
