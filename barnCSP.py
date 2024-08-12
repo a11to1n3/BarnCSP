@@ -12,6 +12,7 @@ from src.search_in_2D.random_k_points_searcher import find_optimal_k_points_rand
 from src.search_in_2D.uniform_grid_k_points_searcher import find_optimal_k_points_uniform_grid_search_2D
 from src.search_in_2D.simulated_annealing_k_points_searcher import find_optimal_k_points_simulated_annealing_2D
 from src.search_in_2D.PSO_k_points_searcher import find_optimal_k_points_pso_2D
+from src.search_in_2D.monte_carlo_k_points_searcher import find_optimal_k_points_monte_carlo_2D
 
 from src.search_in_3D.tda_mapper_k_points_searcher import find_optimal_k_points_tda_3D
 from src.search_in_3D.kmedoids_k_points_searcher import find_optimal_k_points_kmedoids_3D
@@ -19,6 +20,7 @@ from src.search_in_3D.random_k_points_searcher import find_optimal_k_points_rand
 from src.search_in_3D.uniform_grid_k_points_searcher import find_optimal_k_points_uniform_grid_search_3D
 from src.search_in_3D.simulated_annealing_k_points_searcher import find_optimal_k_points_simulated_annealing_3D
 from src.search_in_3D.PSO_k_points_searcher import find_optimal_k_points_pso_3D
+from src.search_in_3D.monte_carlo_k_points_searcher import find_optimal_k_points_monte_carlo_3D
 
 
 APP_CONFIG = {
@@ -71,7 +73,13 @@ PSO_CONFIG = {
     "c2": 1.5,
     "w": 0.7,
 }
-
+MONTE_CARLO_CONFIG = {
+    ## For sensitivity analysis
+    "sampling_budget": 10000,
+    "neighborhood_numbers": 5,
+    "max_epochs": 20,
+    "convergence_threshold": 1e-7
+}
 
 def main(args):
     # Load csv barn file
@@ -340,10 +348,9 @@ def main(args):
                     i,
                     in_CO2_avg,
                     APP_CONFIG["barn_section"],
-                    sampling_budget=SIMULATED_ANNEALING_CONFIG["sampling_budget"],
-                    neighborhood_numbers=SIMULATED_ANNEALING_CONFIG["neighborhood_numbers"],
+                    sampling_budget=PSO_CONFIG["sampling_budget"],
+                    neighborhood_numbers=PSO_CONFIG["neighborhood_numbers"],
                     epochs=PSO_CONFIG["epochs"],
-                    num_particles=PSO_CONFIG["num_particles"],
                     c1=PSO_CONFIG["c1"],
                     c2=PSO_CONFIG["c2"],
                     w=PSO_CONFIG["w"],
@@ -362,12 +369,51 @@ def main(args):
                     sampling_budget=SIMULATED_ANNEALING_CONFIG["sampling_budget"],
                     neighborhood_numbers=SIMULATED_ANNEALING_CONFIG["neighborhood_numbers"],
                     epochs=SIMULATED_ANNEALING_CONFIG["epochs"],
-                    num_particles=PSO_CONFIG["num_particles"],
                     c1=PSO_CONFIG["c1"],
                     c2=PSO_CONFIG["c2"],
                     w=PSO_CONFIG["w"],
-                    sampling_budget=RANDOM_CONFIG["sampling_budget"],
-                    neighborhood_numbers=RANDOM_CONFIG["neighborhood_numbers"],
+                    barn_LW_ratio=barn_LW_ratio,
+                )
+                for i in tqdm(range(1, APP_CONFIG["max_k_points"] + 1))
+            ]
+    elif args.clusteringAlg.lower() == "monte-carlo":
+        print("[Status] Starting Monte-Carlo k-point searcher ...")
+        # Update the saving path
+        APP_CONFIG["results_path"] = os.path.join(
+            os.path.join(APP_CONFIG["results_path"], "Monte-Carlo"),
+            args.barnFilename.split("/")[-1].split(".")[0],
+        )
+
+        # Search for k points in 2D
+        if args.dim.lower() == "2d":
+            print(f"[Status] Searching k points in 2D at height {APP_CONFIG['barn_section']} ...")
+            results = [
+                find_optimal_k_points_monte_carlo_2D(
+                    nodes_df,
+                    barn_inside,
+                    i,
+                    in_CO2_avg,
+                    APP_CONFIG["barn_section"],
+                    sampling_budget=MONTE_CARLO_CONFIG["sampling_budget"],
+                    neighborhood_numbers=MONTE_CARLO_CONFIG["neighborhood_numbers"],
+                    max_epochs=MONTE_CARLO_CONFIG["max_epochs"],
+                    convergence_threshold=MONTE_CARLO_CONFIG["convergence_threshold"],
+                    barn_LW_ratio=barn_LW_ratio,
+                )
+                for i in tqdm(range(1, APP_CONFIG["max_k_points"] + 1))
+            ]
+        elif args.dim.lower() == "3d":
+            print("[Status] Searching k points in the whole 3D space ...")
+            results = [
+                find_optimal_k_points_monte_carlo_3D(
+                    nodes_df,
+                    barn_inside,
+                    i,
+                    in_CO2_avg,
+                    sampling_budget=MONTE_CARLO_CONFIG["sampling_budget"],
+                    neighborhood_numbers=MONTE_CARLO_CONFIG["neighborhood_numbers"],
+                    max_epochs=MONTE_CARLO_CONFIG["max_epochs"],
+                    convergence_threshold=MONTE_CARLO_CONFIG["convergence_threshold"],
                     barn_LW_ratio=barn_LW_ratio,
                 )
                 for i in tqdm(range(1, APP_CONFIG["max_k_points"] + 1))
@@ -413,7 +459,7 @@ if __name__ == "__main__":
         "--clusteringAlg",
         type=str,
         default="tda-mapper",
-        help="choose among tda-mapper/kmedoids/random/uniform/simulated-annealing/PSO",
+        help="choose among tda-mapper/kmedoids/random/uniform/simulated-annealing/PSO/monte-carlo",
     )
     parser.add_argument(
         "-d",
