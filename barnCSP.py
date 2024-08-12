@@ -13,7 +13,6 @@ from src.search_in_2D.uniform_grid_k_points_searcher import find_optimal_k_point
 from src.search_in_2D.simulated_annealing_k_points_searcher import find_optimal_k_points_simulated_annealing_2D
 from src.search_in_2D.PSO_k_points_searcher import find_optimal_k_points_pso_2D
 
-
 from src.search_in_3D.tda_mapper_k_points_searcher import find_optimal_k_points_tda_3D
 from src.search_in_3D.kmedoids_k_points_searcher import find_optimal_k_points_kmedoids_3D
 from src.search_in_3D.random_k_points_searcher import find_optimal_k_points_random_search_3D
@@ -367,6 +366,8 @@ def main(args):
                     c1=PSO_CONFIG["c1"],
                     c2=PSO_CONFIG["c2"],
                     w=PSO_CONFIG["w"],
+                    sampling_budget=RANDOM_CONFIG["sampling_budget"],
+                    neighborhood_numbers=RANDOM_CONFIG["neighborhood_numbers"],
                     barn_LW_ratio=barn_LW_ratio,
                 )
                 for i in tqdm(range(1, APP_CONFIG["max_k_points"] + 1))
@@ -413,6 +414,7 @@ if __name__ == "__main__":
         type=str,
         default="tda-mapper",
         help="choose among tda-mapper/kmedoids/random/uniform/simulated-annealing/PSO",
+
     )
     parser.add_argument(
         "-d",
