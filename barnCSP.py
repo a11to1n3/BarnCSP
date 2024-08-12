@@ -414,7 +414,6 @@ if __name__ == "__main__":
         type=str,
         default="tda-mapper",
         help="choose among tda-mapper/kmedoids/random/uniform/simulated-annealing/PSO",
-
     )
     parser.add_argument(
         "-d",
