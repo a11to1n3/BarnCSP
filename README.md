@@ -11,7 +11,7 @@
 - Run the script, then the corresponding results will appear in the results folder:
 
 `
-python barnCSP.py -c [tda-mapper/kmedoids/random/uniform/simulated-annealing/PSO/monte-carlo] -d [2D/3D] [path/to/barn/csv/file]
+python barnCSP.py -c [tda-mapper/kmedoids/random/uniform/simulated-annealing/PSO/monte-carlo/genetic] -d [2D/3D] [path/to/barn/csv/file]
 `
 
 ### Note
