@@ -59,8 +59,8 @@ def find_optimal_k_points_tda_2D(
     for i in nodes_at_height_df.index:
         for j in range(k):
             if (
-                nodes_at_height_df.loc[i, "X"] >= split_ranges[j][0]
-                and nodes_at_height_df.loc[i, "X"] < split_ranges[j][1]
+                nodes_at_height_df.loc[i, cross_section] >= split_ranges[j][0]
+                and nodes_at_height_df.loc[i, cross_section] < split_ranges[j][1]
             ):
                 nodes_at_height_df.loc[i, f"cluster{j}"] = 1
 
